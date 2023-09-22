@@ -1,10 +1,244 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My GitHub Pages SiteT</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Server Status Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #serverForm {
+            margin: 20px auto;
+            max-width: 400px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #007bff;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button.clicked {
+            background-color: #0056b3;
+            transform: scale(0.95);
+        }
+
+        /* Improved UI styles */
+        .info-container {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .info-container h2 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .info-container p {
+            margin: 5px 0;
+        }
+
+        .info-container.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #serverIcon {
+            display: none;
+            max-width: 64px;
+            height: auto;
+            margin-top: 10px;
+            border-radius: 5px;
+            transition: opacity 0.3s ease;
+        }
+
+        #debugInfo {
+            font-size: 16px;
+            text-align: left;
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #debugInfo.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to My GitHub Pages Site</h1>
-    <h1><a href="test1.html">Visit W3Schools.com!</a></h1>
+    <h1>Minecraft Server Status Checker</h1>
+    <form id="serverForm">
+        <label for="serverAddress">Server Address:</label>
+        <input type="text" id="serverAddress" placeholder="Enter server address (e.g., example.com)" required><br>
+
+        <button type="button" id="checkStatus">Check Status</button>
+    </form>
+
+    <!-- Improved UI containers for server information -->
+    <div class="info-container" id="motdContainer">
+        <h2>MOTD:</h2>
+        <p id="motd"></p>
+    </div>
+
+    <div class="info-container" id="playersContainer">
+        <h2>Players:</h2>
+        <p id="playerCount"></p>
+    </div>
+
+    <div class="info-container" id="versionContainer">
+        <h2>Version:</h2>
+        <p id="serverVersion"></p>
+    </div>
+
+    <img id="serverIcon" src="" alt="Server Icon">
+    <div id="debugInfo" class="info-container"></div>
+
+    <script>
+        const serverAddressInput = document.getElementById("serverAddress");
+        const checkStatusButton = document.getElementById("checkStatus");
+
+        checkStatusButton.addEventListener("click", function () {
+            const serverAddress = serverAddressInput.value;
+            const apiUrl = `https://api.mcsrvstat.us/3/${serverAddress}`;
+
+            // Preload the server icon
+            const iconUrl = `https://api.mcsrvstat.us/icon/${serverAddress}`;
+            const serverIcon = document.getElementById("serverIcon");
+            serverIcon.src = iconUrl;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.online) {
+                        updateUI(data);
+                    } else {
+                        hideInfoContainers();
+                        document.getElementById("statusMessage").textContent = "Server is offline.";
+                    }
+
+                    // Display debug info
+                    const debugInfo = document.getElementById("debugInfo");
+                    debugInfo.innerHTML = `
+                        <h2>Debug Info:</h2>
+                        <p>Cache time: ${data.debug.cachetime}</p>
+                        <p>Hostname: ${data.hostname}</p>
+                        <p>IP address: ${data.ip}</p>
+                        <p>Port: ${data.port}</p>
+                        <p>Protocol version: ${data.protocol.version} (${data.protocol.name})</p>
+                        <p>Blocked by Mojang: ${data.eula_blocked ? 'Yes' : 'No'}</p>
+                        <p>SRV record: ${data.debug.srv ? 'Yes' : 'No'}</p>
+                        <p>Ping: ${data.debug.ping ? 'Yes' : 'No'}</p>
+                        <p>Query: ${data.debug.query ? 'Yes' : 'No'}</p>
+                    `;
+
+                    // Show debug info and server icon with animations
+                    setTimeout(() => {
+                        debugInfo.classList.add("show");
+                        serverIcon.style.display = "block";
+                        serverIcon.style.opacity = "1";
+                    }, 300);
+                })
+                .catch(error => {
+                    hideInfoContainers();
+                    document.getElementById("statusMessage").textContent = "Error checking server status.";
+                });
+
+            // Add animation to the button
+            checkStatusButton.classList.add("clicked");
+            setTimeout(() => {
+                checkStatusButton.classList.remove("clicked");
+            }, 200);
+        });
+
+        // Check for server address in the URL
+        const url = new URL(window.location.href);
+        const serverParam = url.searchParams.get("server");
+        if (serverParam) {
+            serverAddressInput.value = serverParam;
+            checkStatusButton.click();
+        }
+
+        // Function to update UI with server information
+        function updateUI(data) {
+            // MOTD
+            const motdContainer = document.getElementById("motdContainer");
+            motdContainer.style.display = "block";
+            motdContainer.classList.add("show");
+            document.getElementById("motd").innerHTML = data.motd.clean.join('<br>');
+
+            // Player count
+            const playersContainer = document.getElementById("playersContainer");
+            playersContainer.style.display = "block";
+            playersContainer.classList.add("show");
+            document.getElementById("playerCount").textContent = `${data.players.online} / ${data.players.max}`;
+
+            // Version
+            const versionContainer = document.getElementById("versionContainer");
+            versionContainer.style.display = "block";
+            versionContainer.classList.add("show");
+            document.getElementById("serverVersion").textContent = data.version;
+        }
+
+        // Function to hide info containers
+        function hideInfoContainers() {
+            const infoContainers = document.querySelectorAll(".info-container");
+            infoContainers.forEach(container => {
+                container.style.display = "none";
+            });
+        }
+    </script>
 </body>
 </html>
