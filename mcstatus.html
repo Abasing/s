@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Server Status Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #serverForm {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button[type="button"] {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        button[type="button"]:hover {
+            background-color: #0056b3;
+        }
+
+        #statusMessage {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Minecraft Server Status Checker</h1>
+    <form id="serverForm">
+        <label for="serverAddress">Server Address:</label>
+        <input type="text" id="serverAddress" placeholder="Enter server address (e.g., example.com)" required><br>
+
+        <button type="button" id="checkStatus">Check Status</button>
+    </form>
+
+    <div id="statusMessage"></div>
+
+    <script>
+        document.getElementById("checkStatus").addEventListener("click", function () {
+            const serverAddress = document.getElementById("serverAddress").value;
+            const apiUrl = `https://api.mcsrvstat.us/3/${serverAddress}`;
+
+            // Disable the button while fetching data
+            this.disabled = true;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.online) {
+                        document.getElementById("statusMessage").innerHTML = `
+                            <p>Server is online!</p>
+                            <p>IP: ${data.ip}</p>
+                            <p>Port: ${data.port}</p>
+                            <p>Version: ${data.version}</p>
+                            <p>Players Online: ${data.players.online}/${data.players.max}</p>
+                        `;
+                    } else {
+                        document.getElementById("statusMessage").textContent = "Server is offline.";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById("statusMessage").textContent = "Error checking server status.";
+                })
+                .finally(() => {
+                    // Re-enable the button after fetching data
+                    this.disabled = false;
+                });
+        });
+    </script>
+</body>
+</html>
